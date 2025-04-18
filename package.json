@@ -1,0 +1,27 @@
+{
+  "name": "kanban",
+  "version": "1.0.0",
+  "description": "A project to learn working of project management tool, where user can create projects, have tasks in project with different status and different users with different role etc",
+  "homepage": "https://github.com/dahiyasunil/project-management-tool#readme",
+  "bugs": {
+    "url": "https://github.com/dahiyasunil/project-management-tool/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dahiyasunil/project-management-tool.git"
+  },
+  "license": "ISC",
+  "author": "sunil dahiya",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --watch .src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "mongoose": "^8.13.2"
+  }
+}
