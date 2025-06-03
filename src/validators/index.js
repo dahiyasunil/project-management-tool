@@ -23,7 +23,7 @@ const userRegistrationValidator = () => {
       .withMessage(
         "Password must be 8 character long, containing 1 upper case, 1 lower case, 1 numberic and 1 special character."
       ),
-    body("role").trim().notEmpty("Role is required"),
+    body("role").trim().notEmpty().withMessage("Role is required"),
   ];
 };
 
@@ -33,3 +33,5 @@ const userLoginValidator = () => {
     body("password").notEmpty().withMessage("Password cannot be empty"),
   ];
 };
+
+export { userRegistrationValidator, userLoginValidator };
