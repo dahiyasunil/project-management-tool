@@ -23,7 +23,13 @@ const userRegistrationValidator = () => {
       .withMessage(
         "Password must be 8 character long, containing 1 upper case, 1 lower case, 1 numberic and 1 special character."
       ),
-    body("role").trim().notEmpty().withMessage("Role is required"),
+    body("fullname")
+      .notEmpty()
+      .withMessage("User full name is required")
+      .isLength({ min: 4 })
+      .withMessage("Name should be atleast 2 character long")
+      .isLength({ max: 50 })
+      .withMessage("Name should be atleast 2 character long"),
   ];
 };
 

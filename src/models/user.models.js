@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { UserRolesEnum, AvailableUserRoles } from "../utils/constants.js";
 
 const userSchema = new Schema(
   {
@@ -54,6 +55,11 @@ const userSchema = new Schema(
     },
     emailVerificationExpiry: {
       type: Date,
+    },
+    role: {
+      type: String,
+      enum: AvailableUserRoles,
+      default: UserRolesEnum.MEMEBR,
     },
   },
   { timestamps: true }
