@@ -61,6 +61,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
       .json(new ApiError(400, "Invalid verification token"));
   }
 
+  if (user.isEmailVerified) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "User is already verified"));
+  }
+
   if (Date.now() > user.emailVerificationExpiry) {
     const { hashedToken, unHashedToken, tokenExpiry } =
       user.generateTemporaryToken();
@@ -69,10 +75,10 @@ const verifyEmail = asyncHandler(async (req, res) => {
     user.emailVerificationExpiry = tokenExpiry;
 
     sendMail({
-      email: email,
+      email: user.email,
       subject: "Verify your email",
       mailContentType: emailVerificationContentTemplate(
-        fullname,
+        user.fullname,
         `http://localhost:3000/api/v1/auth/verify/${unHashedToken}`
       ),
     });
@@ -83,6 +89,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
   }
 
   user.emailVerificationToken = undefined;
+  user.emailVerificationExpiry = undefined;
   user.isEmailVerified = true;
 
   await user.save();
