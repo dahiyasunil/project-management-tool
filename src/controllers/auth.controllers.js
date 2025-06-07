@@ -92,4 +92,40 @@ const verifyEmail = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Email verified successfully."));
 });
 
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404, "Invalid email or password"));
+  }
+
+  const validPassword = await user.isPasswordCorrect(password);
+
+  if (!validPassword) {
+    return res.status(404).json(new ApiError(404, "Invalid email or password"));
+  }
+
+  const jwtToken = user.generateAccessToken();
+
+  const cookieOptions = {
+    expires: new Date(Date.now() + 12 * 3600000),
+    secure: true,
+    httpOnly: true,
+  };
+
+  res.cookie("access_token", jwtToken, cookieOptions);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, { id: user._id }, "login successful"));
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  res.cookie("access_token", {}, { expires: new Date(0) });
+
+  res.status(200).json(new ApiResponse(200, {}, "Logged out successfully"));
+});
+
 export { registerUser, verifyEmail, loginUser, logoutUser };
