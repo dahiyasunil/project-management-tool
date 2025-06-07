@@ -128,4 +128,41 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "Logged out successfully"));
 });
 
-export { registerUser, verifyEmail, loginUser, logoutUser };
+const resendEmailVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404, "User does not exists"));
+  }
+
+  const { hashedToken, unHashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationExpiry = tokenExpiry;
+
+  await user.save();
+
+  const mailOptions = {
+    email,
+    subject: "Verify your email",
+    mailContentType: emailVerificationContentTemplate(
+      user.fullname,
+      `http://localhost:3000/api/v1/auth/verify/${unHashedToken}`
+    ),
+  };
+
+  await sendMail(mailOptions);
+
+  res.status(200).json(new ApiResponse(200, {}, "Resent verification email"));
+});
+
+export {
+  registerUser,
+  verifyEmail,
+  loginUser,
+  logoutUser,
+  resendEmailVerification,
+};
