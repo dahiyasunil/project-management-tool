@@ -5,13 +5,19 @@ import {
   loginUser,
   logoutUser,
   resendEmailVerification,
+  forgotPasswordRequest,
+  resetForgottenPassword,
+  changeCurrentPassword,
 } from "../controllers/auth.controllers.js";
 import {
   userRegistrationValidator,
   userLoginValidator,
   resendVerificationEmailValidator,
+  forgotPasswordRequestValidator,
+  resetPasswordValidator,
 } from "../validators/index.js";
 import { validate } from "../middlewares/validator.middlewares.js";
+import { isLoggedIn } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
@@ -28,5 +34,17 @@ router.route("/logout").get(logoutUser);
 router
   .route("/verify-email")
   .post(resendVerificationEmailValidator(), validate, resendEmailVerification);
+
+router
+  .route("/forgot-pwd")
+  .post(forgotPasswordRequestValidator(), validate, forgotPasswordRequest);
+
+router
+  .route("/reset-pwd")
+  .post(resetPasswordValidator(), validate, resetForgottenPassword);
+
+router
+  .route("/change-pwd")
+  .post(resetPasswordValidator(), validate, isLoggedIn, changeCurrentPassword);
 
 export default router;
