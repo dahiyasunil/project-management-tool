@@ -44,8 +44,29 @@ const resendVerificationEmailValidator = () => {
   return [body("email").isEmail().withMessage("Invalid email")];
 };
 
+const forgotPasswordRequestValidator = () => {
+  return [body("email").isEmail().withMessage("Invalid email")];
+};
+
+const resetPasswordValidator = () => {
+  return [
+    body("newPassword")
+      .isStrongPassword()
+      .withMessage(
+        "Password must be 8 character long, containing 1 upper case, 1 lower case, 1 numberic and 1 special character."
+      ),
+    body("confirmPassword")
+      .isStrongPassword()
+      .withMessage(
+        "Password must be 8 character long, containing 1 upper case, 1 lower case, 1 numberic and 1 special character."
+      ),
+  ];
+};
+
 export {
   userRegistrationValidator,
   userLoginValidator,
   resendVerificationEmailValidator,
+  forgotPasswordRequestValidator,
+  resetPasswordValidator,
 };
