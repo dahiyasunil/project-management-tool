@@ -3,7 +3,11 @@ import { asyncHandler } from "../utils/async-handler.js";
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
-import { sendMail, emailVerificationContentTemplate } from "../utils/mail.js";
+import {
+  sendMail,
+  emailVerificationContentTemplate,
+  forgotPasswordContentTemplate,
+} from "../utils/mail.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { email, username, password, fullname } = req.body;
@@ -33,7 +37,7 @@ const registerUser = asyncHandler(async (req, res) => {
     subject: "Verify your email",
     mailContentType: emailVerificationContentTemplate(
       fullname,
-      `http://localhost:3000/api/v1/auth/verify/${unHashedToken}`
+      process.env.BASE_URL + `/api/v1/auth/verify/${unHashedToken}`
     ),
   });
 
@@ -79,7 +83,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       subject: "Verify your email",
       mailContentType: emailVerificationContentTemplate(
         user.fullname,
-        `http://localhost:3000/api/v1/auth/verify/${unHashedToken}`
+        process.env.BASE_URL + `/api/v1/auth/verify/${unHashedToken}`
       ),
     });
 
@@ -157,7 +161,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     subject: "Verify your email",
     mailContentType: emailVerificationContentTemplate(
       user.fullname,
-      `http://localhost:3000/api/v1/auth/verify/${unHashedToken}`
+      process.env.BASE_URL + `/api/v1/auth/verify/${unHashedToken}`
     ),
   };
 
@@ -166,10 +170,105 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "Resent verification email"));
 });
 
+const forgotPasswordRequest = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404, "User does not exists"));
+  }
+
+  const { hashedToken, unHashedToken, tokenExpiry } =
+    await user.generateTemporaryToken();
+
+  user.forgotPasswordToken = hashedToken;
+  user.forgotPasswordExpiry = tokenExpiry;
+
+  await user.save();
+
+  const mailOptions = {
+    email,
+    subject: "Reset Password",
+    mailContentType: forgotPasswordContentTemplate(
+      user.fullname,
+      process.env.BASE_URL + `/api/v1/auth/reset-pwd/${unHashedToken}`
+    ),
+  };
+
+  await sendMail(mailOptions);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Reset password link sent to user"));
+});
+
+const resetForgottenPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!token) {
+    return res
+      .status(400)
+      .json(new ApiError(400, "Invalid verification token"));
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json(new ApiError(400, "Password do not match"));
+  }
+
+  const hashedToken = crypto.createHash("256").update(token).digest("hex");
+
+  const user = await User.findOne({ emailVerificationToken: hashedToken });
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404, "User does not exists"));
+  }
+
+  if (Date.now() > user.forgotPasswordExpiry) {
+    user.forgotPasswordExpiry = undefined;
+    user.forgotPasswordExpiry = undefined;
+    await user.save();
+    return res.status(400).json(new ApiError(400, "Invalid token"));
+  }
+
+  user.password = newPassword;
+
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200, {}, "Password reset successfully"));
+});
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { newPassword, confirmPassword } = req.body;
+  const { _id } = req.user;
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json(new ApiError(400, "Password do not match"));
+  }
+
+  const user = await User.findById(_id);
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404, "User does not exists"));
+  }
+
+  user.password = newPassword;
+
+  await user.save();
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"));
+});
+
 export {
   registerUser,
   verifyEmail,
   loginUser,
   logoutUser,
   resendEmailVerification,
+  forgotPasswordRequest,
+  resetForgottenPassword,
+  changeCurrentPassword,
 };
