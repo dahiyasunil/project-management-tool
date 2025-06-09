@@ -6,14 +6,17 @@ const isLoggedIn = asyncHandler((req, res, next) => {
   const jwtToken = req.cookies?.access_token;
 
   if (!jwtToken) {
-    return res.status(400).json(new ApiError(400, "Authentication failed"));
+    throw new ApiError(400, "Invalid access token");
   }
 
-  const decodedData = jwt.verify(jwtToken, process.env.ACCESS_TOKEN_SECRET);
-
-  req.user = decodedData;
-
-  next();
+  try {
+    const decodedData = jwt.verify(jwtToken, process.env.ACCESS_TOKEN_SECRET);
+    req.user = decodedData;
+    next();
+  } catch (err) {
+    console.error(err);
+    throw new ApiError(401, "Invalid or Expired access token");
+  }
 });
 
 export { isLoggedIn };
