@@ -118,15 +118,27 @@ const loginUser = asyncHandler(async (req, res) => {
     return res.status(404).json(new ApiError(404, "Invalid email or password"));
   }
 
-  const jwtToken = user.generateAccessToken();
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.refreshAccessToken();
+
+  user.refreshToken = refreshToken;
+
+  await user.save();
 
   const cookieOptions = {
-    expires: new Date(Date.now() + 12 * 3600000),
     secure: true,
     httpOnly: true,
   };
 
-  res.cookie("access_token", jwtToken, cookieOptions);
+  res
+    .cookie("access_token", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    })
+    .cookie("refresh_token", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
   res
     .status(200)
