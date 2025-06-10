@@ -274,6 +274,55 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies.refresh_token;
+
+  if (!refreshToken) {
+    throw new ApiError(401, "unauthorized request");
+  }
+
+  const decodedData = jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+
+  const user = await User.findById(decodedData?._id);
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  if (refreshToken !== user?.refreshToken) {
+    throw new ApiError(401, "Refresh token is expired or used");
+  }
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  const newAccessToken = user.generateAccessToken();
+  const newRefreshToken = user.generateRefreshToken();
+
+  user.refreshToken = newRefreshToken;
+
+  await user.save();
+
+  res
+    .cookie("access_token", newAccessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    })
+    .cookie("refresh_token", newRefreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, { id: user._id }, "Access token refreshed"));
+});
+
 export {
   registerUser,
   verifyEmail,
@@ -283,4 +332,5 @@ export {
   forgotPasswordRequest,
   resetForgottenPassword,
   changeCurrentPassword,
+  refreshAccessToken,
 };
