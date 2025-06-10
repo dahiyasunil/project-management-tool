@@ -8,6 +8,7 @@ import {
   forgotPasswordRequest,
   resetForgottenPassword,
   changeCurrentPassword,
+  refreshAccessToken,
 } from "../controllers/auth.controllers.js";
 import {
   userRegistrationValidator,
@@ -46,5 +47,7 @@ router
 router
   .route("/change-pwd")
   .post(resetPasswordValidator(), validate, isLoggedIn, changeCurrentPassword);
+
+router.route("/refresh").post(isLoggedIn, refreshAccessToken);
 
 export default router;
